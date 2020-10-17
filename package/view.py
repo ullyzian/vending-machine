@@ -10,7 +10,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class Window(QMainWindow):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Vending Machine")
         self.setFixedSize(800, 600)
@@ -20,65 +20,72 @@ class Window(QMainWindow):
         self.setCentralWidget(self._centralWidget)
         self._centralWidget.setLayout(self.generalLayout)
 
-        self.createStatusBar()
-        self.createItemsList()
-        self.createMainDisplay()
+        # Products
+        self.productsMenu = ItemsGrid()
+        self.generalLayout.addLayout(self.productsMenu)
 
-    def createItemsList(self):
-        self.itemsLayout = ItemsGrid()
-        self.itemsLayout.setAlignment(Qt.AlignTop)
-        self.generalLayout.addLayout(self.itemsLayout)
+        # Display
+        self.displayMenu = MainDisplay()
+        self.generalLayout.addLayout(self.displayMenu)
 
-    def createMainDisplay(self):
-        self.displayLayout = MainDisplay()
-        self.displayLayout.setAlignment(Qt.AlignTop)
-        self.generalLayout.addLayout(self.displayLayout)
+        # StatusBar
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
 
-    def createStatusBar(self):
-        self.status = QStatusBar()
-        self.status.showMessage("Status: Ok")
-        self.setStatusBar(self.status)
+    def setStatusBarText(self, text: str) -> None:
+        self.statusBar.showMessage(f"Status: {text}")
 
-    def setStatusBarText(self, text):
-        self.status.showMessage(f"Status: {text}")
-
-    def displayWindow(self, i):
-        self.displayLayout.stack.setCurrentIndex(i)
+    def switchWindow(self, i: int) -> None:
+        self.displayMenu.stack.setCurrentIndex(i)
 
 
 class MainDisplay(QVBoxLayout):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-        self.displayUi()
+        self.setAlignment(Qt.AlignTop)
 
+        # Display screen
+        self.displayScreen = DisplayUI()
+        self.addWidget(self.displayScreen)
+
+        # Initialization of menu
         self.stack = QStackedLayout()
-        self.currencySelectMenu = QWidget()
-        self.paymentTypeMenu = QWidget()
+        self.emptyMenu = QWidget()
+        self.currencySelectMenu = CurrencyUI()
+        self.paymentTypeMenu = PaymentTypeUI()
+        self.cashPaymentMenu = CashPaymentUI()
+        self.cardPaymentMenu = CardPaymentUI()
 
-        self.currencySelectUi()
-        self.paymentTypeUi()
-
+        # Adding menu to stack layout
+        self.stack.addWidget(self.emptyMenu)
         self.stack.addWidget(self.currencySelectMenu)
         self.stack.addWidget(self.paymentTypeMenu)
+        self.stack.addWidget(self.cashPaymentMenu)
+        self.stack.addWidget(self.cardPaymentMenu)
 
+        # Adding stack layout to general layout
         self.addLayout(self.stack)
 
-    def displayUi(self):
-        self.display = QPlainTextEdit("Select product")
-        self.display.setReadOnly(True)
-        self.display.setMaximumHeight(100)
-        self.display.setFont(QFont("Arial", 18))
-        self.addWidget(self.display)
 
-    def setDisplayText(self, text):
-        self.display.setPlainText(text)
-        self.display.setFocus()
+class DisplayUI(QPlainTextEdit):
 
-    def currencySelectUi(self):
-        self.currencySelectLayout = QHBoxLayout()
-        self.currencySelectLayout.setAlignment(Qt.AlignTop)
+    def __init__(self) -> None:
+        super().__init__()
+        self.setPlainText("Wybierz produkt")
+        self.setReadOnly(True)
+        self.setMaximumHeight(100)
+        self.setFont(QFont("Arial", 18))
+
+
+class CurrencyUI(QWidget):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.layout = QHBoxLayout()
+        self.layout.setAlignment(Qt.AlignTop)
+
         self.buttonPLN = QPushButton("PLN")
         self.buttonPLN.setMinimumHeight(70)
         self.buttonUSD = QPushButton("USD")
@@ -86,60 +93,81 @@ class MainDisplay(QVBoxLayout):
         self.buttonEUR = QPushButton("EUR")
         self.buttonEUR.setMinimumHeight(70)
 
-        self.currencySelectLayout.addWidget(self.buttonPLN)
-        self.currencySelectLayout.addWidget(self.buttonEUR)
-        self.currencySelectLayout.addWidget(self.buttonUSD)
-        self.currencySelectMenu.setLayout(self.currencySelectLayout)
+        self.layout.addWidget(self.buttonPLN)
+        self.layout.addWidget(self.buttonEUR)
+        self.layout.addWidget(self.buttonUSD)
 
-    def paymentTypeUi(self):
-        self.paymentTypelayout = QHBoxLayout()
-        self.paymentTypelayout.setAlignment(Qt.AlignTop)
-        buttonPayCash = QPushButton("Gotówka")
-        buttonPayCash.setMinimumHeight(70)
-        buttonPayCreditCard = QPushButton("Karta")
-        buttonPayCreditCard.setMinimumHeight(70)
+        self.setLayout(self.layout)
 
-        self.paymentTypelayout.addWidget(buttonPayCash)
-        self.paymentTypelayout.addWidget(buttonPayCreditCard)
-        self.paymentTypeMenu.setLayout(self.paymentTypelayout)
 
-    # def cardPaymentUi(self):
-    #     self.cardPaymentLayout = QHBoxLayout()
-    #     buttonPayment = QPushButton()
-    #     buttonPayment.setMinimumHeight(200)
-    #     buttonPayment.setMaximumWidth(200)
-    #     buttonPayment.setIcon(QIcon(os.path.join(BASE_DIR, 'assets/utilities/card-payment.png')))
-    #     buttonPayment.setIconSize(QSize(200, 200))
-    #     self.cardPaymentLayout.addWidget(buttonPayment)
-    #     self.cardPaymentMenu.setLayout(self.cardPaymentLayout)
-    #
-    # def cashPaymentUi(self):
-    #     self.cashPaymentLayout = QVBoxLayout()
-    #     label = QLabel("Wrzuc monete")
-    #     submit = QPushButton("Zaplać monetami")
-    #     submit.setMinimumHeight(40)
-    #     grid = QGridLayout()
-    #
-    #     buttonHalfPLN = QPushButton("0.50")
-    #     button1PLN = QPushButton("1.00")
-    #     button2PLN = QPushButton("2.00")
-    #     button5PLN = QPushButton("5.00")
-    #
-    #     grid.addWidget(buttonHalfPLN, 0, 0)
-    #     grid.addWidget(button1PLN, 0, 1)
-    #     grid.addWidget(button2PLN, 1, 0)
-    #     grid.addWidget(button5PLN, 1, 1)
-    #
-    #     self.cashPaymentLayout.addWidget(label)
-    #     self.cashPaymentLayout.addLayout(grid)
-    #     self.cashPaymentLayout.addWidget(submit)
-    #     self.cashPaymentMenu.setLayout(self.cashPaymentLayout)
+class PaymentTypeUI(QWidget):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.layout = QHBoxLayout()
+        self.layout.setAlignment(Qt.AlignTop)
+
+        self.buttonPaymentCash = QPushButton("Gotówka")
+        self.buttonPaymentCash.setMinimumHeight(70)
+        self.buttonPaymentCard = QPushButton("Karta")
+        self.buttonPaymentCard.setMinimumHeight(70)
+
+        self.layout.addWidget(self.buttonPaymentCash)
+        self.layout.addWidget(self.buttonPaymentCard)
+
+        self.setLayout(self.layout)
+
+
+class CashPaymentUI(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.layout = QVBoxLayout()
+        self.layout.setAlignment(Qt.AlignTop)
+
+        label = QLabel("Wrzuc monete")
+        submitButton = QPushButton("Zaplać monetami")
+        submitButton.setMinimumHeight(40)
+        grid = QGridLayout()
+
+        buttonHalfPLN = QPushButton("0.50")
+        button1PLN = QPushButton("1.00")
+        button2PLN = QPushButton("2.00")
+        button5PLN = QPushButton("5.00")
+
+        grid.addWidget(buttonHalfPLN, 0, 0)
+        grid.addWidget(button1PLN, 0, 1)
+        grid.addWidget(button2PLN, 1, 0)
+        grid.addWidget(button5PLN, 1, 1)
+
+        self.layout.addWidget(label)
+        self.layout.addLayout(grid)
+        self.layout.addWidget(submitButton)
+
+        self.setLayout(self.layout)
+
+
+class CardPaymentUI(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.layout = QHBoxLayout()
+        self.layout.setAlignment(Qt.AlignTop)
+
+        buttonPayment = QPushButton()
+        buttonPayment.setMinimumHeight(200)
+        buttonPayment.setMaximumWidth(200)
+        buttonPayment.setIcon(QIcon(os.path.join(BASE_DIR, 'assets/utilities/card-payment.png')))
+        buttonPayment.setIconSize(QSize(200, 200))
+
+        self.layout.addWidget(buttonPayment)
+        self.setLayout(self.layout)
 
 
 class ItemsGrid(QGridLayout):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
+        self.setAlignment(Qt.AlignTop)
+
         self.buttons = []
         self.items = [
             {
@@ -200,13 +228,13 @@ class ItemsGrid(QGridLayout):
         label = QLabel("Wybierz product")
         label.setAlignment(Qt.AlignHCenter)
         self.addWidget(label, 0, 0, 1, 4)
-        self.createButtons()
+        self.buttonsUi()
 
-    def disableButtons(self):
+    def disableButtons(self) -> None:
         for button in self.buttons:
             button.setEnabled(False)
 
-    def createButtons(self):
+    def buttonsUi(self) -> None:
         for product in self.items:
             buttonItem = ProductButton(product["name"], product["price"], product["image_url"])
             self.buttons.append(buttonItem)
@@ -215,7 +243,7 @@ class ItemsGrid(QGridLayout):
 
 class ProductButton(QPushButton):
 
-    def __init__(self, name, price, imageUrl):
+    def __init__(self, name: str, price: float, imageUrl: str) -> None:
         super().__init__()
         self.setFixedSize(80, 80)
         self.setIcon(QIcon(os.path.join(BASE_DIR, imageUrl)))

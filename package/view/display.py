@@ -94,23 +94,23 @@ class CashPaymentUI(QWidget):
         self.layout.setAlignment(Qt.AlignTop)
 
         label = QLabel("Wrzuc monete")
-        submitButton = QPushButton("Zaplać monetami")
-        submitButton.setMinimumHeight(40)
+        self.submitButton = QPushButton("Zaplać monetami")
+        self.submitButton.setMinimumHeight(40)
         grid = QGridLayout()
 
-        buttonHalfPLN = QPushButton("0.50")
-        button1PLN = QPushButton("1.00")
-        button2PLN = QPushButton("2.00")
-        button5PLN = QPushButton("5.00")
+        self.buttonHalfPrice = QPushButton("0.50")
+        self.button1Price = QPushButton("1.00")
+        self.button2Price = QPushButton("2.00")
+        self.button5Price = QPushButton("5.00")
 
-        grid.addWidget(buttonHalfPLN, 0, 0)
-        grid.addWidget(button1PLN, 0, 1)
-        grid.addWidget(button2PLN, 1, 0)
-        grid.addWidget(button5PLN, 1, 1)
+        grid.addWidget(self.buttonHalfPrice, 0, 0)
+        grid.addWidget(self.button1Price, 0, 1)
+        grid.addWidget(self.button2Price, 1, 0)
+        grid.addWidget(self.button5Price, 1, 1)
 
         self.layout.addWidget(label)
         self.layout.addLayout(grid)
-        self.layout.addWidget(submitButton)
+        self.layout.addWidget(self.submitButton)
 
         self.setLayout(self.layout)
 

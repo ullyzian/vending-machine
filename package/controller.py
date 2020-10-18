@@ -1,35 +1,30 @@
 from functools import partial
 
-from .model import Product
+from .model import Product, Model
 from .view import Window
 
 
 class Controller:
 
-    def __init__(self, view: Window):
+    def __init__(self, view: Window, model: Model) -> None:
         self.view = view
+        self.model = model
         self.selectedProduct = None
         self.paymentType = None
 
-        # Product menu
-        self.productMenu = ProductMenu(self)
-        self.productMenu.listenSignal()
-
-        # Currency menu
-        self.currencyMenu = CurrencyMenu(self)
-        self.currencyMenu.listenSignal()
-
-        # Payment Type menu
-        self.paymentTypeMenu = PaymentTypeMenu(self)
-        self.paymentTypeMenu.listenSignal()
+        ProductMenu(self)
+        CurrencyMenu(self)
+        PaymentTypeMenu(self)
+        CashPaymentMenu(self)
 
 
 class ProductMenu:
 
     def __init__(self, controller: Controller):
         self.controller = controller
+        self.listenSignal()
 
-    def _performAction(self, message: str, name: str, price: float) -> None:
+    def _performAction(self, name: str, price: float) -> None:
         """
         Create product instance and make UI changes. Default currency 'PLN'
         :param message: text of display message
@@ -37,7 +32,9 @@ class ProductMenu:
         :param price: product price.
         :return: None
         """
-        self.controller.selectedProduct = Product(name, price)
+        message = f"Wybrany produkt: {name}!\n" \
+                  f"Poproszę wybrać wałutę"
+        self.controller.model.selectedProduct = Product(name, price)
         self.controller.view.displayMenu.displayScreen.setPlainText(message)  # Update display with selected product
         self.controller.view.productsMenu.disableButtons()  # Disable buttons
         self.controller.view.switchWindow(1)  # switch to Currency menu
@@ -48,15 +45,15 @@ class ProductMenu:
         :return: None
         """
         for productButton in self.controller.view.productsMenu.buttons:
-            message = f"{productButton.name} selected! \nPlease enter currency payment"
             productButton.clicked.connect(
-                partial(self._performAction, message, productButton.name, productButton.price))
+                partial(self._performAction, productButton.name, productButton.price))
 
 
 class CurrencyMenu:
 
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
+        self.listenSignal()
 
     def _performAction(self, currency: str) -> None:
         """
@@ -64,9 +61,11 @@ class CurrencyMenu:
         :param currency: 'USD', 'PLN' or 'EUR'
         :return: None
         """
-        if self.controller.selectedProduct is None:
+        if self.controller.model.selectedProduct is None:
             raise Exception("Product not initialized")
-        self.controller.view.displayMenu.displayScreen.setPlainText(self.controller.selectedProduct.convertCurrency(currency))
+        message = f"{self.controller.model.selectedProduct.convertCurrency(currency)}\n" \
+                  f"Wybierz typ płatności"
+        self.controller.view.displayMenu.displayScreen.setPlainText(message)
         self.controller.view.switchWindow(2)  # switch to PaymentType menu
 
     def listenSignal(self) -> None:
@@ -86,6 +85,7 @@ class PaymentTypeMenu:
 
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
+        self.listenSignal()
 
     def _performAction(self, paymentType: dict) -> None:
         """
@@ -93,8 +93,10 @@ class PaymentTypeMenu:
         :param paymentType: Cash or Card
         :return: None
         """
-        self.controller.paymentType = paymentType["value"]
-        message = f"Wybrany typ platności: {paymentType['name']}"
+        self.controller.model.paymentType = paymentType["value"]
+        message = f"Wybrana wałuta: {self.controller.model.selectedProduct.currency}\n" \
+                  f"Cena produktu: {self.controller.model.selectedProduct.price}\n" \
+                  f"Wplacona suma: {self.controller.model.enteredAmount}"
         self.controller.view.displayMenu.displayScreen.setPlainText(message)
         if paymentType["value"] == "cash":
             self.controller.view.switchWindow(3)  # switch to Cash menu
@@ -110,3 +112,47 @@ class PaymentTypeMenu:
             partial(self._performAction, {"name": "gotówka", "value": "cash"}))
         self.controller.view.displayMenu.paymentTypeMenu.buttonPaymentCard.clicked.connect(
             partial(self._performAction, {"name": "karta", "value": "card"}))
+
+
+class CashPaymentMenu:
+
+    def __init__(self, controller: Controller) -> None:
+        self.controller = controller
+        self.listenSignal()
+
+    def _performAction(self, coinValue: float) -> None:
+        """
+        Get payment type from user
+        :param coinValue: float value of coin representation
+        :return: None
+        """
+        self.controller.model.enteredAmount += coinValue
+        message = f"Wybrana wałuta: {self.controller.model.selectedProduct.currency}\n" \
+                  f"Cena produktu: {self.controller.model.selectedProduct.price}\n" \
+                  f"Wplacona suma: {self.controller.model.enteredAmount}"
+        self.controller.view.displayMenu.displayScreen.setPlainText(message)
+
+    def _processPayment(self):
+        self.controller.model.processCashPayment()
+        if self.controller.model.error is not None:
+            self.controller.view.displayMenu.displayScreen.appendPlainText(self.controller.model.error)
+
+    def listenSignal(self) -> None:
+        """
+        Listen to payment type selection
+        :return: None
+        """
+        self.controller.view.displayMenu.cashPaymentMenu.buttonHalfPrice.clicked.connect(
+            partial(self._performAction, 0.50))
+        self.controller.view.displayMenu.cashPaymentMenu.button1Price.clicked.connect(
+            partial(self._performAction, 1.00))
+        self.controller.view.displayMenu.cashPaymentMenu.button2Price.clicked.connect(
+            partial(self._performAction, 2.00))
+        self.controller.view.displayMenu.cashPaymentMenu.button5Price.clicked.connect(
+            partial(self._performAction, 5.00))
+
+        # submit
+        self.controller.view.displayMenu.cashPaymentMenu.submitButton.clicked.connect(
+            partial(self._processPayment)
+        )
+

@@ -101,7 +101,7 @@ class PaymentTypeMenu:
         if paymentType["value"] == "cash":
             self.controller.view.switchWindow(3)  # switch to Cash menu
         elif paymentType["value"] == "card":
-            self.controller.view.switchWindow(4)  # switch to Card menu
+            self.controller.view.switchWindow(5)  # switch to Card menu
 
     def listenSignal(self) -> None:
         """
@@ -133,9 +133,16 @@ class CashPaymentMenu:
         self.controller.view.displayMenu.displayScreen.setPlainText(message)
 
     def _processPayment(self):
-        self.controller.model.processCashPayment()
+        result = self.controller.model.processCashPayment()
         if self.controller.model.error is not None:
             self.controller.view.displayMenu.displayScreen.appendPlainText(self.controller.model.error)
+        elif result is not None:
+            self.controller.view.displayMenu.cashPaymentResultMenu.changeDialog.changeTable.updateTable(result)
+            denominations = self.controller.model.getCurrencyStore(
+                self.controller.model.selectedProduct.currency).denominations
+            self.controller.view.displayMenu.cashPaymentResultMenu.denominationsDialog.denominationsTable.updateTable(
+                self.controller.model.changeToTable(denominations))
+            self.controller.view.switchWindow(4)  # switch to Card menu
 
     def listenSignal(self) -> None:
         """
@@ -155,4 +162,3 @@ class CashPaymentMenu:
         self.controller.view.displayMenu.cashPaymentMenu.submitButton.clicked.connect(
             partial(self._processPayment)
         )
-

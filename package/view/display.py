@@ -3,7 +3,7 @@ import os
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QStackedLayout, QWidget, QPlainTextEdit, QHBoxLayout, QPushButton, QLabel, \
-    QGridLayout
+    QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QDialog
 
 from package import BASE_DIR
 
@@ -26,12 +26,14 @@ class MainDisplay(QVBoxLayout):
         self.paymentTypeMenu = PaymentTypeUI()
         self.cashPaymentMenu = CashPaymentUI()
         self.cardPaymentMenu = CardPaymentUI()
+        self.cashPaymentResultMenu = CashResultUI()
 
         # Adding menu to stack layout
         self.stack.addWidget(self.emptyMenu)
         self.stack.addWidget(self.currencySelectMenu)
         self.stack.addWidget(self.paymentTypeMenu)
         self.stack.addWidget(self.cashPaymentMenu)
+        self.stack.addWidget(self.cashPaymentResultMenu)
         self.stack.addWidget(self.cardPaymentMenu)
 
         # Adding stack layout to general layout
@@ -113,6 +115,61 @@ class CashPaymentUI(QWidget):
         self.layout.addWidget(self.submitButton)
 
         self.setLayout(self.layout)
+
+
+class CashResultUI(QWidget):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.layout = QHBoxLayout()
+        self.layout.setAlignment(Qt.AlignTop)
+        self.buttonChange = QPushButton("Pokaż resztę")
+        self.buttonAvaliableDenomninations = QPushButton("Pokaż dostępny nominały")
+        self.changeDialog = ChanageDialog()
+        self.denominationsDialog = AvaliableDenominationsDialog()
+
+        self.layout.addWidget(self.buttonChange)
+        self.layout.addWidget(self.buttonAvaliableDenomninations)
+
+        self.setLayout(self.layout)
+
+
+class ChanageDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Tablica reszty")
+        self.changeTable = TableView({}, 8, 3)
+
+
+class AvaliableDenominationsDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Tablica nominałów")
+        self.denominationsTable = TableView({}, 8, 3)
+
+
+class TableView(QTableWidget):
+    def __init__(self, data, *args):
+        QTableWidget.__init__(self, *args)
+        self.data = data
+        self.setData()
+        self.setVisible(False)
+
+    def updateTable(self, data):
+        self.data = data
+        self.setData()
+        self.setVisible(True)
+        header = self.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+
+    def setData(self):
+        horHeaders = []
+        for n, key in enumerate(self.data.keys()):
+            horHeaders.append(key)
+            for m, item in enumerate(self.data[key]):
+                newitem = QTableWidgetItem(item)
+                self.setItem(m, n, newitem)
+        self.setHorizontalHeaderLabels(horHeaders)
 
 
 class CardPaymentUI(QWidget):

@@ -1,6 +1,8 @@
 from decimal import Decimal
 from random import randint
 
+from typing import List, Dict
+
 
 class Product:
 
@@ -52,10 +54,13 @@ class Model:
     def processCashPayment(self):
         if self.enteredAmount < self.selectedProduct.price:
             self.error = "Za mało pieniędzy!"
+        change = self.calculateChange()
+        if change is not None:
+            return self.changeToTable(change)
+        else:
+            return None
 
-        print(self.calculateChange())
-
-    def _getCurrencyStore(self, currency: str):
+    def getCurrencyStore(self, currency: str):
         store = {
             "PLN": StorePLN(),
             "USD": StoreUSD(),
@@ -63,20 +68,30 @@ class Model:
         }
         return store[currency]
 
+    def changeToTable(self, change: List[Denomination]) -> Dict:
+        table = {
+            "value": [],
+            "amount": [],
+            "currency": []
+        }
+
+        for denomination in change:
+            table["value"].append(str(denomination.value))
+            table["amount"].append(str(denomination.amount))
+            table["currency"].append(str(denomination.currency))
+
+        return table
+
     def calculateChange(self):
         changeInDenominations = []
-        print(self.selectedProduct.price)
-        print(self.enteredAmount)
         toBePaid = float(Decimal(str(self.enteredAmount)) - Decimal(str(self.selectedProduct.price)))
-        store = self._getCurrencyStore(self.selectedProduct.currency)
+        store = self.getCurrencyStore(self.selectedProduct.currency)
 
         for denomination in store.denominations:
-            print(f"To pay: {toBePaid}")
-            print(f"Denomination: {denomination}")
+
             if toBePaid <= 0:
                 break
             numberOfDenominations = int(Decimal(str(toBePaid)) // Decimal(str(denomination.value)))
-            print(f"{numberOfDenominations}")
 
             if 0 < numberOfDenominations <= denomination.amount:
                 toBePaid = float(Decimal(str(toBePaid)) - Decimal(str(denomination.value * numberOfDenominations)))
@@ -85,6 +100,7 @@ class Model:
 
         if toBePaid > 0:
             self.error = "Nie można wydać resztę"
+            return None
         else:
             return changeInDenominations
 
@@ -99,9 +115,6 @@ class BaseStore:
     def populateStore(self):
         for value in self.denominationValues:
             self.denominations.append(Denomination(value, randint(0, 20), self.currency))
-
-    def canChangeBeGiven(self, productPrice: float, enteredAmount: float) -> bool:
-        pass
 
     def __str__(self):
         return f"<Store: {self.denominations}>"

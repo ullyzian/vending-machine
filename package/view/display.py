@@ -13,6 +13,7 @@ class MainDisplay(QVBoxLayout):
     def __init__(self) -> None:
         super().__init__()
 
+        # Align layout
         self.setAlignment(Qt.AlignTop)
 
         # Display screen
@@ -25,8 +26,8 @@ class MainDisplay(QVBoxLayout):
         self.currencySelectMenu = CurrencyUI()
         self.paymentTypeMenu = PaymentTypeUI()
         self.cashPaymentMenu = CashPaymentUI()
-        self.cardPaymentMenu = CardPaymentUI()
         self.cashPaymentResultMenu = CashResultUI()
+        self.cardPaymentMenu = CardPaymentUI()
 
         # Adding menu to stack layout
         self.stack.addWidget(self.emptyMenu)
@@ -58,11 +59,8 @@ class CurrencyUI(QWidget):
         self.layout.setAlignment(Qt.AlignTop)
 
         self.buttonPLN = QPushButton("PLN")
-        self.buttonPLN.setMinimumHeight(70)
         self.buttonUSD = QPushButton("USD")
-        self.buttonUSD.setMinimumHeight(70)
         self.buttonEUR = QPushButton("EUR")
-        self.buttonEUR.setMinimumHeight(70)
 
         self.layout.addWidget(self.buttonPLN)
         self.layout.addWidget(self.buttonEUR)
@@ -79,9 +77,7 @@ class PaymentTypeUI(QWidget):
         self.layout.setAlignment(Qt.AlignTop)
 
         self.buttonPaymentCash = QPushButton("Gotówka")
-        self.buttonPaymentCash.setMinimumHeight(70)
         self.buttonPaymentCard = QPushButton("Karta")
-        self.buttonPaymentCard.setMinimumHeight(70)
 
         self.layout.addWidget(self.buttonPaymentCash)
         self.layout.addWidget(self.buttonPaymentCard)
@@ -97,7 +93,6 @@ class CashPaymentUI(QWidget):
 
         label = QLabel("Wrzuc monete")
         self.submitButton = QPushButton("Zaplać monetami")
-        self.submitButton.setMinimumHeight(40)
         grid = QGridLayout()
 
         self.buttonHalfPrice = QPushButton("0.50")
@@ -123,11 +118,15 @@ class CashResultUI(QWidget):
         super().__init__()
         self.layout = QHBoxLayout()
         self.layout.setAlignment(Qt.AlignTop)
+
+        # buttons
         self.buttonChange = QPushButton("Pokaż resztę")
         self.buttonAvaliableDenomninations = QPushButton("Pokaż dostępny nominały")
         self.buttonReset = QPushButton("Wróc do początku")
-        self.changeDialog = ChanageDialog()
-        self.denominationsDialog = AvaliableDenominationsDialog()
+
+        # dialogs
+        self.changeDialog = ChangeDialog()
+        self.denominationsDialog = AvailableDenominationsDialog()
 
         self.layout.addWidget(self.buttonChange)
         self.layout.addWidget(self.buttonAvaliableDenomninations)
@@ -136,14 +135,14 @@ class CashResultUI(QWidget):
         self.setLayout(self.layout)
 
 
-class ChanageDialog(QDialog):
+class ChangeDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Tablica reszty")
         self.changeTable = TableView({}, 8, 3)
 
 
-class AvaliableDenominationsDialog(QDialog):
+class AvailableDenominationsDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Tablica nominałów")
@@ -155,12 +154,10 @@ class TableView(QTableWidget):
         QTableWidget.__init__(self, *args)
         self.data = data
         self.setData()
-        self.setVisible(False)
 
     def updateTable(self, data):
         self.data = data
         self.setData()
-        self.setVisible(True)
         header = self.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.Stretch)
 

@@ -5,56 +5,82 @@ from .view import Window
 
 
 class Controller:
+    """
+    Base controller of vending-machine
+    """
 
     def __init__(self, view: Window, model: Model) -> None:
         self.view = view
         self.model = model
-        self.selectedProduct = None
-        self.paymentType = None
 
-        ProductMenu(self)
-        CurrencyMenu(self)
-        PaymentTypeMenu(self)
-        CashPaymentMenu(self)
-        CashResultMenu(self)
+        # controller components
+        ProductMenuController(self)
+        CurrencyMenuController(self)
+        PaymentTypeMenuController(self)
+        CashPaymentMenuController(self)
+        CashResultMenuController(self)
 
 
-class ProductMenu:
+class ProductMenuController:
+    """
+    Product menu controller
+    """
 
-    def __init__(self, controller: Controller):
+    def __init__(self, controller: Controller) -> None:
         self.controller = controller
         self.listenSignal()
 
-    def _performAction(self, name: str, price: float) -> None:
+    def _setMessage(self, name: str) -> None:
         """
-        Create product instance and make UI changes. Default currency 'PLN'
-        :param message: text of display message
-        :param name: product name
-        :param price: product price.
+        Updates display with selected product
+        :param name: name of product
         :return: None
         """
         message = f"Wybrany produkt: {name}!\n" \
                   f"Poproszę wybrać wałutę"
+        self.controller.view.setDisplayText(message)
+
+    def _performAction(self, name: str, price: float) -> None:
+        """
+        Create product instance and make UI changes. Default currency 'PLN'
+        :param name: product name
+        :param price: product price.
+        :return: None
+        """
+
         self.controller.model.selectedProduct = Product(name, price)
-        self.controller.view.displayMenu.displayScreen.setPlainText(message)  # Update display with selected product
-        self.controller.view.productsMenu.disableButtons()  # Disable buttons
-        self.controller.view.switchWindow(1)  # switch to Currency menu
+        self._setMessage(name)
+        self.controller.view.setButtonsEnabled(False)  # Disable buttons
+        self.controller.view.switchMenu("currency")  # switch to Currency menu
 
     def listenSignal(self) -> None:
         """
         Listen fro product selection
         :return: None
         """
-        for productButton in self.controller.view.productsMenu.buttons:
-            productButton.clicked.connect(
-                partial(self._performAction, productButton.name, productButton.price))
+        for button in self.controller.view.productsMenu.productButtons:
+            button.clicked.connect(
+                partial(self._performAction, button.product.name, button.product.price))
 
 
-class CurrencyMenu:
+class CurrencyMenuController:
+    """
+    Currency menu controller
+    """
 
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
         self.listenSignal()
+
+    def _setMessage(self, currencyMessage: str) -> None:
+        """
+        Updates display with currency selection information
+        :param currencyMessage: message
+        :return: None
+        """
+        message = f"{currencyMessage}\n" \
+                  f"Wybierz typ płatności"
+        self.controller.view.setDisplayText(message)
 
     def _performAction(self, currency: str) -> None:
         """
@@ -64,10 +90,10 @@ class CurrencyMenu:
         """
         if self.controller.model.selectedProduct is None:
             raise Exception("Product not initialized")
-        message = f"{self.controller.model.selectedProduct.convertCurrency(currency)}\n" \
-                  f"Wybierz typ płatności"
-        self.controller.view.displayMenu.displayScreen.setPlainText(message)
-        self.controller.view.switchWindow(2)  # switch to PaymentType menu
+
+        message = self.controller.model.selectedProduct.convertCurrency(currency)
+        self._setMessage(message)
+        self.controller.view.switchMenu("paymentType")  # switch to PaymentType menu
 
     def listenSignal(self) -> None:
         """
@@ -82,11 +108,25 @@ class CurrencyMenu:
             partial(self._performAction, "EUR"))
 
 
-class PaymentTypeMenu:
+class PaymentTypeMenuController:
+
+    """
+    Payment type selection menu controller
+    """
 
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
         self.listenSignal()
+
+    def _setMessage(self) -> None:
+        """
+        Updates display with prepayment information
+        :return:
+        """
+        message = f"Wybrana wałuta: {self.controller.model.selectedProduct.currency}\n" \
+                  f"Cena produktu: {self.controller.model.selectedProduct.price}\n" \
+                  f"Wplacona suma: {self.controller.model.enteredAmount}"
+        self.controller.view.setDisplayText(message)
 
     def _performAction(self, paymentType: dict) -> None:
         """
@@ -94,15 +134,15 @@ class PaymentTypeMenu:
         :param paymentType: Cash or Card
         :return: None
         """
+
         self.controller.model.paymentType = paymentType["value"]
-        message = f"Wybrana wałuta: {self.controller.model.selectedProduct.currency}\n" \
-                  f"Cena produktu: {self.controller.model.selectedProduct.price}\n" \
-                  f"Wplacona suma: {self.controller.model.enteredAmount}"
-        self.controller.view.displayMenu.displayScreen.setPlainText(message)
+        self._setMessage()
         if paymentType["value"] == "cash":
-            self.controller.view.switchWindow(3)  # switch to Cash menu
+            self.controller.view.switchMenu("cash")  # switch to Cash menu
         elif paymentType["value"] == "card":
-            self.controller.view.switchWindow(5)  # switch to Card menu
+            self.controller.view.switchMenu("card")  # switch to Card menu
+        else:
+            raise Exception(f"Invalid payment type given: {paymentType['value']}")
 
     def listenSignal(self) -> None:
         """
@@ -115,11 +155,35 @@ class PaymentTypeMenu:
             partial(self._performAction, {"name": "karta", "value": "card"}))
 
 
-class CashPaymentMenu:
+class CashPaymentMenuController:
+    """
+    Cash payment menu controller
+    """
 
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
         self.listenSignal()
+
+    def _updateMessage(self) -> None:
+        """
+        Updates display information after certain actions
+        :return: None
+        """
+        message = f"Wybrana wałuta: {self.controller.model.selectedProduct.currency}\n" \
+                  f"Cena produktu: {self.controller.model.selectedProduct.price}\n" \
+                  f"Wplacona suma: {self.controller.model.enteredAmount}\n" \
+                  f"{self.controller.model.error if self.controller.model.error else ''}"
+        self.controller.view.setDisplayText(message)
+
+    def _setMessage(self) -> None:
+        """
+        Updates display with information after payment
+        :return: None
+        """
+        message = f"Wyplacona suma: {self.controller.model.payed}\n" \
+                  f"Odbierz produkt\n" \
+                  f"Dziękuję"
+        self.controller.view.setDisplayText(message)
 
     def _performAction(self, coinValue: float) -> None:
         """
@@ -128,20 +192,25 @@ class CashPaymentMenu:
         :return: None
         """
         self.controller.model.enteredAmount += coinValue
-        message = f"Wybrana wałuta: {self.controller.model.selectedProduct.currency}\n" \
-                  f"Cena produktu: {self.controller.model.selectedProduct.price}\n" \
-                  f"Wplacona suma: {self.controller.model.enteredAmount}"
-        self.controller.view.displayMenu.displayScreen.setPlainText(message)
+        self._updateMessage()
 
-    def _processPayment(self):
+    def _processPayment(self) -> None:
+        """
+        After submitting payment, perform processing
+        :return: None
+        """
+
         self.controller.model.processCashPayment()
+
+        # if error occurred, then display it
         if self.controller.model.error is not None:
-            self.controller.view.displayMenu.displayScreen.appendPlainText(self.controller.model.error)
+            self._updateMessage()
+        # if change exists, then show post payment page
         elif self.controller.model.change is not None:
-            message = f"Wyplacona suma: {self.controller.model.payed}\n" \
-                      f"Odbierz produkt\nDziękuję"
-            self.controller.view.displayMenu.displayScreen.setPlainText(message)
-            self.controller.view.switchWindow(4)  # switch to Card menu
+            self._setMessage()
+            self.controller.view.switchMenu("cashResult")  # switch to Card menu
+        else:
+            raise Exception("Change attribute doesn't set")
 
     def listenSignal(self) -> None:
         """
@@ -163,21 +232,35 @@ class CashPaymentMenu:
         )
 
 
-class CashResultMenu:
+class CashResultMenuController:
+    """
+    Post payment cash result menu controller
+    """
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
         self.listenSignal()
 
-    def _showChangeDialog(self):
-        self.controller.view.displayMenu.cashPaymentResultMenu.changeDialog.changeTable.updateTable(
-            self.controller.model.change)
+    def _showChangeDialog(self) -> None:
+        """
+        Shows change table dialog
+        :return: None
+        """
+        changeTableValues = self.controller.model.change
+        self.controller.view.updateChangeTable(changeTableValues)
 
-    def _showDenominationsDialog(self):
-        denominations = self.controller.model.store.denominations
-        self.controller.view.displayMenu.cashPaymentResultMenu.denominationsDialog.denominationsTable.updateTable(
-            self.controller.model.changeToTable(denominations))
+    def _showDenominationsDialog(self) -> None:
+        """
+        Shows table dialog with available denominations
+        :return: None
+        """
+        denominationsTableValues = self.controller.model.changeToTable(self.controller.model.store.denominations)
+        self.controller.view.updateDenominationsTable(denominationsTableValues)
 
-    def _reset(self):
+    def _reset(self) -> None:
+        """
+        Resets view and model
+        :return: None
+        """
         self.controller.view.resetUI()
         self.controller.model.reset()
 

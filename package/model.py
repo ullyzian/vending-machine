@@ -1,8 +1,9 @@
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from random import randint
 
 from typing import List, Dict, Union
 
+getcontext().prec = 2
 
 class BaseStore:
     """
@@ -84,7 +85,7 @@ class Product:
             self.price = self.base_price
             return "Wybrana wałuta: PLN"
         elif currency == "USD":
-            self.price = self.base_price * Decimal("0.26") # PLN to USD ~= 0.26
+            self.price = self.base_price * Decimal("0.26")  # PLN to USD ~= 0.26
             return "Wybrana wałuta: USD"
         elif currency == "EUR":
             self.price = self.base_price * Decimal("0.22")  # PLN to EUR ~= 0.22
@@ -102,7 +103,7 @@ class Denomination:
     For now, it's just coins
     """
 
-    def __init__(self, value: str, amount: int, currency: str) -> None:
+    def __init__(self, value: Decimal, amount: int, currency: str) -> None:
         self.value = value
         self.amount = amount
         self.currency = currency
@@ -122,7 +123,7 @@ class Model:
     def __init__(self) -> None:
         self.selectedProduct = None
         self.paymentType = None
-        self.enteredAmount = "0.00"
+        self.enteredAmount = Decimal("0.00")
         self.error = None
         self.change = None
         self.store = None
@@ -133,7 +134,7 @@ class Model:
         Processing cash payment
         :return: None
         """
-
+        self.error = None
         if self.enteredAmount < self.selectedProduct.price:
             self.error = "Za mało pieniędzy!"
         change = self.calculateChange()
@@ -183,7 +184,7 @@ class Model:
         """
 
         change = []
-        toPay = Decimal(self.enteredAmount) - Decimal(self.selectedProduct.price)
+        toPay = self.enteredAmount - self.selectedProduct.price
         self.payed = toPay
         self.store = self.getCurrencyStore(self.selectedProduct.currency)
 
@@ -193,13 +194,12 @@ class Model:
                 break
 
             # calculates maximum numbers of denominations in current denomination
-            numberOfDenominations = int(toPay // Decimal(denomination.value)))
+            numberOfDenominations = int(toPay // denomination.value)
 
             # if denomination can be given and it exists in store then add
             if 0 < numberOfDenominations <= denomination.amount:
-                toPay = float(Decimal(str(toPay)) - Decimal(str(denomination.value * numberOfDenominations)))
-                change.append(
-                    Denomination(denomination.value, numberOfDenominations, denomination.currency))
+                toPay = toPay - (denomination.value * numberOfDenominations)
+                change.append(Denomination(denomination.value, numberOfDenominations, denomination.currency))
 
         # Display error if change can't be given
         if toPay > 0:
@@ -217,7 +217,7 @@ class Model:
         self.selectedProduct = None
         self.store = None
         self.change = None
-        self.enteredAmount = 0.00
+        self.enteredAmount = Decimal("0.00")
         self.paymentType = None
         self.error = None
         self.payed = None

@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
@@ -14,55 +15,55 @@ class ProductsGrid(QGridLayout):
             "position": (1, 1),
             "name": "Kawa",
             "image_url": "assets/products/kawa.jpg",
-            "price": 2.00
+            "price": Decimal("2.00")
         },
         {
             "position": (2, 1),
             "name": "Herbata",
             "image_url": "assets/products/tea.jpg",
-            "price": 2.00
+            "price": Decimal("2.00")
         },
         {
             "position": (3, 1),
             "name": "Woda",
             "image_url": "assets/products/water.jpeg",
-            "price": 1.00
+            "price": Decimal("1.00")
         },
         {
             "position": (1, 2),
             "name": "Snickers",
             "image_url": "assets/products/snickers.jpeg",
-            "price": 4.00
+            "price": Decimal("4.00")
         },
         {
             "position": (2, 2),
             "name": "Twix",
             "image_url": "assets/products/twix.png",
-            "price": 4.00
+            "price": Decimal("4.00")
         },
         {
             "position": (3, 2),
             "name": "Kitkat",
             "image_url": "assets/products/kitkat.png",
-            "price": 4.00
+            "price": Decimal("4.00")
         },
         {
             "position": (1, 3),
             "name": "Cola",
             "image_url": "assets/products/cola.jpeg",
-            "price": 5.00
+            "price": Decimal("5.00")
         },
         {
             "position": (2, 3),
             "name": "Sok",
             "image_url": "assets/products/sok.jpg",
-            "price": 5.00
+            "price": Decimal("5.00")
         },
         {
             "position": (3, 3),
             "name": "Czipsy",
             "image_url": "assets/products/lays.jpeg",
-            "price": 3.00
+            "price": Decimal("3.00")
         }
     ]
 
@@ -85,7 +86,7 @@ class ProductsGrid(QGridLayout):
 
 class ProductButton(QPushButton):
 
-    def __init__(self, name: str, price: float, imageUrl: str) -> None:
+    def __init__(self, name: str, price: Decimal, imageUrl: str) -> None:
         super().__init__()
         self.setFixedSize(80, 80)
         self.setIcon(QIcon(os.path.join(BASE_DIR, imageUrl)))

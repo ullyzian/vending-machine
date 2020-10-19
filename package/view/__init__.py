@@ -67,6 +67,7 @@ class Window(QMainWindow):
         :param changeTableValues: columns and rows
         :return: None
         """
+        print(changeTableValues)
         self.displayMenu.cashPaymentResultMenu.changeDialog.changeTable.updateTable(changeTableValues)
 
     def updateDenominationsTable(self, denominationsTableValues: dict) -> None:

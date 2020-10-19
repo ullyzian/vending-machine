@@ -154,10 +154,14 @@ class TableView(QTableWidget):
         QTableWidget.__init__(self, *args)
         self.data = data
         self.setData()
+        self.setMinimumHeight(300)
+        self.setMinimumWidth(400)
+        self.setVisible(False)
 
     def updateTable(self, data):
         self.data = data
         self.setData()
+        self.setVisible(True)
         header = self.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.Stretch)
 

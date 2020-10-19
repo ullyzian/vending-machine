@@ -1,3 +1,4 @@
+from decimal import Decimal, getcontext
 from functools import partial
 
 from .model import Product, Model
@@ -40,7 +41,7 @@ class ProductMenuController:
                   f"Poproszę wybrać wałutę"
         self.controller.view.setDisplayText(message)
 
-    def _performAction(self, name: str, price: float) -> None:
+    def _performAction(self, name: str, price: Decimal) -> None:
         """
         Create product instance and make UI changes. Default currency 'PLN'
         :param name: product name
@@ -185,7 +186,7 @@ class CashPaymentMenuController:
                   f"Dziękuję"
         self.controller.view.setDisplayText(message)
 
-    def _performAction(self, coinValue: float) -> None:
+    def _performAction(self, coinValue: Decimal) -> None:
         """
         Get payment type from user
         :param coinValue: float value of coin representation
@@ -199,7 +200,6 @@ class CashPaymentMenuController:
         After submitting payment, perform processing
         :return: None
         """
-
         self.controller.model.processCashPayment()
 
         # if error occurred, then display it
@@ -218,13 +218,13 @@ class CashPaymentMenuController:
         :return: None
         """
         self.controller.view.displayMenu.cashPaymentMenu.buttonHalfPrice.clicked.connect(
-            partial(self._performAction, 0.50))
+            partial(self._performAction, Decimal("0.50")))
         self.controller.view.displayMenu.cashPaymentMenu.button1Price.clicked.connect(
-            partial(self._performAction, 1.00))
+            partial(self._performAction, Decimal("1.00")))
         self.controller.view.displayMenu.cashPaymentMenu.button2Price.clicked.connect(
-            partial(self._performAction, 2.00))
+            partial(self._performAction, Decimal("2.00")))
         self.controller.view.displayMenu.cashPaymentMenu.button5Price.clicked.connect(
-            partial(self._performAction, 5.00))
+            partial(self._performAction, Decimal("5.00")))
 
         # submit
         self.controller.view.displayMenu.cashPaymentMenu.submitButton.clicked.connect(

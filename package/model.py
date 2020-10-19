@@ -50,15 +50,16 @@ class Model:
     paymentType = None
     enteredAmount = 0.00
     error = None
+    change = None
+    store = None
+    payed = None
 
     def processCashPayment(self):
         if self.enteredAmount < self.selectedProduct.price:
             self.error = "Za mało pieniędzy!"
         change = self.calculateChange()
         if change is not None:
-            return self.changeToTable(change)
-        else:
-            return None
+            self.change = self.changeToTable(change)
 
     def getCurrencyStore(self, currency: str):
         store = {
@@ -85,9 +86,10 @@ class Model:
     def calculateChange(self):
         changeInDenominations = []
         toBePaid = float(Decimal(str(self.enteredAmount)) - Decimal(str(self.selectedProduct.price)))
-        store = self.getCurrencyStore(self.selectedProduct.currency)
+        self.payed = toBePaid
+        self.store = self.getCurrencyStore(self.selectedProduct.currency)
 
-        for denomination in store.denominations:
+        for denomination in self.store.denominations:
 
             if toBePaid <= 0:
                 break
@@ -103,6 +105,15 @@ class Model:
             return None
         else:
             return changeInDenominations
+
+    def reset(self):
+        self.selectedProduct = None
+        self.store = None
+        self.change = None
+        self.enteredAmount = 0.00
+        self.paymentType = None
+        self.error = None
+        self.payed = None
 
 
 class BaseStore:

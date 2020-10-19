@@ -16,6 +16,7 @@ class Controller:
         CurrencyMenu(self)
         PaymentTypeMenu(self)
         CashPaymentMenu(self)
+        CashResultMenu(self)
 
 
 class ProductMenu:
@@ -133,15 +134,13 @@ class CashPaymentMenu:
         self.controller.view.displayMenu.displayScreen.setPlainText(message)
 
     def _processPayment(self):
-        result = self.controller.model.processCashPayment()
+        self.controller.model.processCashPayment()
         if self.controller.model.error is not None:
             self.controller.view.displayMenu.displayScreen.appendPlainText(self.controller.model.error)
-        elif result is not None:
-            self.controller.view.displayMenu.cashPaymentResultMenu.changeDialog.changeTable.updateTable(result)
-            denominations = self.controller.model.getCurrencyStore(
-                self.controller.model.selectedProduct.currency).denominations
-            self.controller.view.displayMenu.cashPaymentResultMenu.denominationsDialog.denominationsTable.updateTable(
-                self.controller.model.changeToTable(denominations))
+        elif self.controller.model.change is not None:
+            message = f"Wyplacona suma: {self.controller.model.payed}\n" \
+                      f"Odbierz produkt\nDziękuję"
+            self.controller.view.displayMenu.displayScreen.setPlainText(message)
             self.controller.view.switchWindow(4)  # switch to Card menu
 
     def listenSignal(self) -> None:
@@ -162,3 +161,34 @@ class CashPaymentMenu:
         self.controller.view.displayMenu.cashPaymentMenu.submitButton.clicked.connect(
             partial(self._processPayment)
         )
+
+
+class CashResultMenu:
+    def __init__(self, controller: Controller) -> None:
+        self.controller = controller
+        self.listenSignal()
+
+    def _showChangeDialog(self):
+        self.controller.view.displayMenu.cashPaymentResultMenu.changeDialog.changeTable.updateTable(
+            self.controller.model.change)
+
+    def _showDenominationsDialog(self):
+        denominations = self.controller.model.store.denominations
+        self.controller.view.displayMenu.cashPaymentResultMenu.denominationsDialog.denominationsTable.updateTable(
+            self.controller.model.changeToTable(denominations))
+
+    def _reset(self):
+        self.controller.view.resetUI()
+        self.controller.model.reset()
+
+    def listenSignal(self) -> None:
+        """
+        Listen to payment type selection
+        :return: None
+        """
+        self.controller.view.displayMenu.cashPaymentResultMenu.buttonChange.clicked.connect(
+            partial(self._showChangeDialog))
+        self.controller.view.displayMenu.cashPaymentResultMenu.buttonAvaliableDenomninations.clicked.connect(
+            partial(self._showDenominationsDialog))
+        self.controller.view.displayMenu.cashPaymentResultMenu.buttonReset.clicked.connect(
+            partial(self._reset))

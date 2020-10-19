@@ -125,11 +125,13 @@ class CashResultUI(QWidget):
         self.layout.setAlignment(Qt.AlignTop)
         self.buttonChange = QPushButton("Pokaż resztę")
         self.buttonAvaliableDenomninations = QPushButton("Pokaż dostępny nominały")
+        self.buttonReset = QPushButton("Wróc do początku")
         self.changeDialog = ChanageDialog()
         self.denominationsDialog = AvaliableDenominationsDialog()
 
         self.layout.addWidget(self.buttonChange)
         self.layout.addWidget(self.buttonAvaliableDenomninations)
+        self.layout.addWidget(self.buttonReset)
 
         self.setLayout(self.layout)
 

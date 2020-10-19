@@ -33,3 +33,9 @@ class Window(QMainWindow):
 
     def switchWindow(self, i: int) -> None:
         self.displayMenu.stack.setCurrentIndex(i)
+
+    def resetUI(self):
+        for button in self.productsMenu.buttons:
+            button.setEnabled(True)
+        self.displayMenu.stack.setCurrentIndex(0)
+        self.displayMenu.displayScreen.setPlainText("Wybierz produkt")

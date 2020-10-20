@@ -66,6 +66,37 @@ class Account:
     cards: List[Card]
 
 
+@dataclass
+class Denomination:
+    """
+    Denomination representation in vending machine
+    For now, it's just coins
+    """
+    value: Decimal
+    amount: int
+    currency: str
+
+
+def populateAccounts() -> List[Account]:
+    accounts = []
+
+    card1 = Card("423746237462", Decimal("200.00"), "PLN")
+    account1 = Account("Jan Kawalski", [card1])
+    accounts.append(account1)
+
+    card2 = Card("42352465364", Decimal("100.00"), "USD")
+    card3 = Card("92378647823", Decimal("25.00"), "EUR")
+    account2 = Account("Piotr Maniewski", [card2, card3])
+    accounts.append(account2)
+
+    card4 = Card("48723658473623", Decimal("0.00"), "PLN")
+    card5 = Card("456745235423423", Decimal("89.00"), "EUR")
+    account3 = Account("Leszek Jung", [card4, card5])
+    accounts.append(account3)
+
+    return accounts
+
+
 class BaseStore:
     """
     Abstract store
@@ -124,37 +155,6 @@ class StoreEUR(BaseStore):
 
 
 @dataclass
-class Denomination:
-    """
-    Denomination representation in vending machine
-    For now, it's just coins
-    """
-    value: Decimal
-    amount: int
-    currency: str
-
-
-def populateAccounts() -> List[Account]:
-    accounts = []
-
-    card1 = Card("423746237462", Decimal("200.00"), "PLN")
-    account1 = Account("Jan Kawalski", [card1])
-    accounts.append(account1)
-
-    card2 = Card("42352465364", Decimal("100.00"), "USD")
-    card3 = Card("92378647823", Decimal("25.00"), "EUR")
-    account2 = Account("Piotr Maniewski", [card2, card3])
-    accounts.append(account2)
-
-    card4 = Card("48723658473623", Decimal("0.00"), "PLN")
-    card5 = Card("456745235423423", Decimal("89.00"), "EUR")
-    account3 = Account("Leszek Jung", [card4, card5])
-    accounts.append(account3)
-
-    return accounts
-
-
-@dataclass
 class Core:
     """
     Top level model in vending-machine
@@ -189,8 +189,10 @@ class Core:
             self.error = "Error: wybierz konto"
         elif self.selectedCard is None:
             self.error = "Error: wybierz kartę"
-        elif self.selectedCard.balance < self.selectedProduct.getConvertedPrice(self.selectedCard.currency):
-            self.error = f"Error: nie wystarczy środków na koncie. środki: {self.selectedCard.balance}{self.selectedCard.currency}"
+        elif self.selectedCard.balance < self.selectedProduct.getConvertedPrice(
+                self.selectedCard.currency):
+            self.error = f"Error: nie wystarczy środków na koncie. środki: " \
+                         f"{self.selectedCard.balance}{self.selectedCard.currency}"
         else:
             self.selectedCard.pay(self.selectedProduct)
 
@@ -255,7 +257,8 @@ class Core:
             # if denomination can be given and it exists in store then add
             if 0 < numberOfDenominations <= denomination.amount:
                 toPay = toPay - (denomination.value * numberOfDenominations)
-                change.append(Denomination(denomination.value, numberOfDenominations, denomination.currency))
+                change.append(Denomination(denomination.value, numberOfDenominations,
+                                           denomination.currency))
 
         # Display error if change can't be given
         if toPay > 0:

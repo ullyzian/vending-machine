@@ -31,41 +31,39 @@ a.datas += [('package/assets/products/cola.jpeg', 'package/assets/products/cola.
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
-if sys.platform == 'darwin':
-    exe = EXE(pyz,
-              a.scripts,
-              a.binaries,
-              a.zipfiles,
-              a.datas,
-              [],
-              name='main',
-              debug=False,
-              bootloader_ignore_signals=False,
-              strip=False,
-              upx=True,
-              upx_exclude=[],
-              runtime_tmpdir=None,
-              console=False )
+exe = EXE(pyz,
+          a.scripts,
+          a.binaries,
+          a.zipfiles,
+          a.datas,
+          [],
+          name='vending-machine-console',
+          debug=False,
+          bootloader_ignore_signals=False,
+          strip=False,
+          upx=True,
+          upx_exclude=[],
+          runtime_tmpdir=None,
+          console=False )
 
-if sys.platform == 'darwin':
-    app = BUNDLE(exe,
-                 name='vending-machine.app',
-                 info_plist={
-                      'NSHighResolutionCapable': 'True'
-                 },
-                 icon=None,
-                 bundle_identifier=None)
 
-if sys.platform == 'win32' or sys.platform == 'win64' or sys.platform == 'linux':
-  exe = EXE(pyz,
-            a.scripts,
-            a.binaries,
-            a.zipfiles,
-            a.datas,
-            name='vending-machine',
-            debug=False,
-            strip=False,
-            upx=True,
-            runtime_tmpdir=None,
-            console=False,
-         )
+app = BUNDLE(exe,
+             name='vending-machine.app',
+             info_plist={
+                  'NSHighResolutionCapable': 'True'
+             },
+             icon=None,
+             bundle_identifier=None)
+
+exe = EXE(pyz,
+        a.scripts,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        name='vending-machine',
+        debug=False,
+        strip=False,
+        upx=True,
+        runtime_tmpdir=None,
+        console=False,
+     )

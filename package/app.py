@@ -9,7 +9,6 @@ from package.view import Window
 
 def run():
     app = QApplication(sys.argv)
-    app.processEvents()
     view = Window()
     view.show()
     model = Core()

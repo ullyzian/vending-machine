@@ -328,6 +328,7 @@ class CardPaymentMenuController:
             self._updateMessage()
         else:
             self.controller.view.displayMenu.cardPaymentMenu.buttonPayment.setEnabled(False)
+            self.controller.view.displayMenu.cardPaymentMenu.buttonPayment.repaint()
             self._setMessage()
 
     def _onAccountSelect(self):

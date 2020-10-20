@@ -1,7 +1,7 @@
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from functools import partial
 
-from .model import Product, Model
+from .model import Product, Core
 from .view import Window
 
 
@@ -10,9 +10,9 @@ class Controller:
     Base controller of vending-machine
     """
 
-    def __init__(self, view: Window, model: Model) -> None:
-        self.view = view
+    def __init__(self, view: Window, model: Core) -> None:
         self.model = model
+        self.view = view
 
         # controller components
         ProductMenuController(self)
@@ -20,6 +20,7 @@ class Controller:
         PaymentTypeMenuController(self)
         CashPaymentMenuController(self)
         CashResultMenuController(self)
+        CardPaymentMenuController(self)
 
 
 class ProductMenuController:
@@ -73,13 +74,12 @@ class CurrencyMenuController:
         self.controller = controller
         self.listenSignal()
 
-    def _setMessage(self, currencyMessage: str) -> None:
+    def _setMessage(self) -> None:
         """
         Updates display with currency selection information
-        :param currencyMessage: message
         :return: None
         """
-        message = f"{currencyMessage}\n" \
+        message = f"Wybrana waluta: {self.controller.model.selectedProduct.currency}\n" \
                   f"Wybierz typ płatności"
         self.controller.view.setDisplayText(message)
 
@@ -92,8 +92,8 @@ class CurrencyMenuController:
         if self.controller.model.selectedProduct is None:
             raise Exception("Product not initialized")
 
-        message = self.controller.model.selectedProduct.convertCurrency(currency)
-        self._setMessage(message)
+        self.controller.model.selectedProduct.convertCurrency(currency)
+        self._setMessage()
         self.controller.view.switchMenu("paymentType")  # switch to PaymentType menu
 
     def listenSignal(self) -> None:
@@ -110,7 +110,6 @@ class CurrencyMenuController:
 
 
 class PaymentTypeMenuController:
-
     """
     Payment type selection menu controller
     """
@@ -129,21 +128,20 @@ class PaymentTypeMenuController:
                   f"Wplacona suma: {self.controller.model.enteredAmount}"
         self.controller.view.setDisplayText(message)
 
-    def _performAction(self, paymentType: dict) -> None:
+    def _performAction(self, paymentType: str) -> None:
         """
         Get payment type from user
         :param paymentType: Cash or Card
         :return: None
         """
-
-        self.controller.model.paymentType = paymentType["value"]
         self._setMessage()
-        if paymentType["value"] == "cash":
+        if paymentType == "cash":
+            self.controller.view.displayMenu.cashPaymentMenu.setCurrencyButtons(self.controller.model.selectedProduct.currency)
             self.controller.view.switchMenu("cash")  # switch to Cash menu
-        elif paymentType["value"] == "card":
+        elif paymentType == "card":
             self.controller.view.switchMenu("card")  # switch to Card menu
         else:
-            raise Exception(f"Invalid payment type given: {paymentType['value']}")
+            raise Exception(f"Invalid payment type given: {paymentType}")
 
     def listenSignal(self) -> None:
         """
@@ -151,9 +149,9 @@ class PaymentTypeMenuController:
         :return: None
         """
         self.controller.view.displayMenu.paymentTypeMenu.buttonPaymentCash.clicked.connect(
-            partial(self._performAction, {"name": "gotówka", "value": "cash"}))
+            partial(self._performAction, "cash"))
         self.controller.view.displayMenu.paymentTypeMenu.buttonPaymentCard.clicked.connect(
-            partial(self._performAction, {"name": "karta", "value": "card"}))
+            partial(self._performAction, "card"))
 
 
 class CashPaymentMenuController:
@@ -186,13 +184,20 @@ class CashPaymentMenuController:
                   f"Dziękuję"
         self.controller.view.setDisplayText(message)
 
-    def _performAction(self, coinValue: Decimal) -> None:
+    def _performAction(self, buttonName: str) -> None:
         """
         Get payment type from user
-        :param coinValue: float value of coin representation
+        :param buttonName: name of button
         :return: None
         """
-        self.controller.model.enteredAmount += coinValue
+        cashMenu = self.controller.view.displayMenu.cashPaymentMenu
+        values = {
+            "btn1": cashMenu.buttonCash1.text(),
+            "btn2": cashMenu.buttonCash2.text(),
+            "btn3": cashMenu.buttonCash3.text(),
+            "btn4": cashMenu.buttonCash4.text()
+        }
+        self.controller.model.insertDenomination(Decimal(values[buttonName]))
         self._updateMessage()
 
     def _processPayment(self) -> None:
@@ -217,14 +222,12 @@ class CashPaymentMenuController:
         Listen to payment type selection
         :return: None
         """
-        self.controller.view.displayMenu.cashPaymentMenu.buttonHalfPrice.clicked.connect(
-            partial(self._performAction, Decimal("0.50")))
-        self.controller.view.displayMenu.cashPaymentMenu.button1Price.clicked.connect(
-            partial(self._performAction, Decimal("1.00")))
-        self.controller.view.displayMenu.cashPaymentMenu.button2Price.clicked.connect(
-            partial(self._performAction, Decimal("2.00")))
-        self.controller.view.displayMenu.cashPaymentMenu.button5Price.clicked.connect(
-            partial(self._performAction, Decimal("5.00")))
+        cashMenu = self.controller.view.displayMenu.cashPaymentMenu
+
+        cashMenu.buttonCash1.clicked.connect(partial(self._performAction, "btn1"))
+        cashMenu.buttonCash2.clicked.connect(partial(self._performAction, "btn2"))
+        cashMenu.buttonCash3.clicked.connect(partial(self._performAction, "btn3"))
+        cashMenu.buttonCash4.clicked.connect(partial(self._performAction, "btn4"))
 
         # submit
         self.controller.view.displayMenu.cashPaymentMenu.submitButton.clicked.connect(
@@ -236,6 +239,7 @@ class CashResultMenuController:
     """
     Post payment cash result menu controller
     """
+
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
         self.listenSignal()
@@ -275,3 +279,69 @@ class CashResultMenuController:
             partial(self._showDenominationsDialog))
         self.controller.view.displayMenu.cashPaymentResultMenu.buttonReset.clicked.connect(
             partial(self._reset))
+
+
+class CardPaymentMenuController:
+    """
+    Cash payment menu controller
+    """
+
+    def __init__(self, controller: Controller) -> None:
+        self.controller = controller
+        self.controller.view.displayMenu.cardPaymentMenu.setAccounts(self.controller.model.accounts)
+        self.controller.model.selectedAccount = self.controller.view.displayMenu.cardPaymentMenu.accountSelect.currentData()
+        self.controller.model.selectedCard = self.controller.view.displayMenu.cardPaymentMenu.cardSelect.currentData()
+
+        self.listenSignal()
+
+    def _reset(self) -> None:
+        """
+        Resets view and model
+        :return: None
+        """
+        self.controller.view.resetUI()
+        self.controller.model.reset()
+
+    def _updateMessage(self) -> None:
+        """
+        Updates display information after certain actions
+        :return: None
+        """
+        message = f"Wybrana wałuta: {self.controller.model.selectedProduct.currency}\n" \
+                  f"Cena produktu: {self.controller.model.selectedProduct.price}\n" \
+                  f"{self.controller.model.error if self.controller.model.error else ''}"
+        self.controller.view.setDisplayText(message)
+
+    def _setMessage(self) -> None:
+        """
+        Updates display information after successful payment
+        :return: None
+        """
+        message = f"Zaplacił {self.controller.model.selectedAccount.fullname} kartą: {self.controller.model.selectedCard}\n" \
+                  f"Odbierz produkt\n" \
+                  f"Dziękuję"
+        self.controller.view.setDisplayText(message)
+
+    def _processPayment(self):
+        self.controller.model.processCardPayment()
+        if self.controller.model.error is not None:
+            self._updateMessage()
+        else:
+            self.controller.view.displayMenu.cardPaymentMenu.buttonPayment.setEnabled(False)
+            self._setMessage()
+
+    def _onAccountSelect(self):
+        account = self.controller.view.displayMenu.cardPaymentMenu.accountSelect.currentData()
+        self.controller.view.displayMenu.cardPaymentMenu.onAccountSelect(account)
+        self.controller.model.selectedAccount = account
+        self.controller.model.selectedCard = self.controller.view.displayMenu.cardPaymentMenu.cardSelect.currentData()
+
+    def listenSignal(self) -> None:
+        """
+        Listen to payment type selection
+        :return: None
+        """
+        cardMenu = self.controller.view.displayMenu.cardPaymentMenu
+        cardMenu.buttonPayment.clicked.connect(partial(self._processPayment))
+        cardMenu.accountSelect.currentIndexChanged.connect(partial(self._onAccountSelect))
+        cardMenu.buttonReset.clicked.connect(partial(self._reset))

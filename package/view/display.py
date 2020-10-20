@@ -3,9 +3,9 @@ import os
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QStackedLayout, QWidget, QPlainTextEdit, QHBoxLayout, QPushButton, QLabel, \
-    QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QDialog
+    QGridLayout, QTableWidget, QTableWidgetItem, QHeaderView, QDialog, QComboBox
 
-from package import BASE_DIR
+from package import BASE_DIR, resource_path
 
 
 class MainDisplay(QVBoxLayout):
@@ -93,23 +93,51 @@ class CashPaymentUI(QWidget):
 
         label = QLabel("Wrzuc monete")
         self.submitButton = QPushButton("Zaplać monetami")
-        grid = QGridLayout()
+        self.grid = QGridLayout()
 
-        self.buttonHalfPrice = QPushButton("0.50")
-        self.button1Price = QPushButton("1.00")
-        self.button2Price = QPushButton("2.00")
-        self.button5Price = QPushButton("5.00")
+        self.buttonCash1 = QPushButton("0.50")
+        self.buttonCash2 = QPushButton("1.00")
+        self.buttonCash3 = QPushButton("2.00")
+        self.buttonCash4 = QPushButton("5.00")
 
-        grid.addWidget(self.buttonHalfPrice, 0, 0)
-        grid.addWidget(self.button1Price, 0, 1)
-        grid.addWidget(self.button2Price, 1, 0)
-        grid.addWidget(self.button5Price, 1, 1)
+        self.grid.addWidget(self.buttonCash1, 0, 0)
+        self.grid.addWidget(self.buttonCash2, 0, 1)
+        self.grid.addWidget(self.buttonCash3, 1, 0)
+        self.grid.addWidget(self.buttonCash4, 1, 1)
 
         self.layout.addWidget(label)
-        self.layout.addLayout(grid)
+        self.layout.addLayout(self.grid)
         self.layout.addWidget(self.submitButton)
 
         self.setLayout(self.layout)
+
+    def setCurrencyButtons(self, currency):
+        if currency == "PLN":
+            self.buttonsPLN()
+        elif currency == "USD":
+            self.buttonsUSD()
+        elif currency == "EUR":
+            self.buttonsEUR()
+        else:
+            raise ValueError(f"Unknown currency given: {currency}")
+
+    def buttonsPLN(self):
+        self.buttonCash1.setText("0.50")
+        self.buttonCash2.setText("1.00")
+        self.buttonCash3.setText("2.00")
+        self.buttonCash4.setText("5.00")
+
+    def buttonsEUR(self):
+        self.buttonCash1.setText("0.20")
+        self.buttonCash2.setText("0.50")
+        self.buttonCash3.setText("1.00")
+        self.buttonCash4.setText("2.00")
+
+    def buttonsUSD(self):
+        self.buttonCash1.setText("0.10")
+        self.buttonCash2.setText("0.25")
+        self.buttonCash3.setText("0.50")
+        self.buttonCash4.setText("1.00")
 
 
 class CashResultUI(QWidget):
@@ -178,14 +206,34 @@ class TableView(QTableWidget):
 class CardPaymentUI(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.layout = QHBoxLayout()
+        self.layout = QVBoxLayout()
         self.layout.setAlignment(Qt.AlignTop)
 
-        buttonPayment = QPushButton()
-        buttonPayment.setMinimumHeight(200)
-        buttonPayment.setMaximumWidth(200)
-        buttonPayment.setIcon(QIcon(os.path.join(BASE_DIR, 'assets/utilities/card-payment.png')))
-        buttonPayment.setIconSize(QSize(200, 200))
+        self.selectLayout = QHBoxLayout()
+        self.accountSelect = QComboBox()
+        self.cardSelect = QComboBox()
 
-        self.layout.addWidget(buttonPayment)
+        self.selectLayout.addWidget(self.accountSelect)
+        self.selectLayout.addWidget(self.cardSelect)
+
+        self.buttonPayment = QPushButton()
+        self.buttonPayment.setMinimumHeight(200)
+        self.buttonPayment.setMaximumWidth(200)
+        self.buttonPayment.setIcon(QIcon(resource_path('package/assets/utilities/card-payment.png')))
+        self.buttonPayment.setIconSize(QSize(200, 200))
+        self.buttonReset = QPushButton("Wróc do początku")
+
+        self.layout.addLayout(self.selectLayout)
+        self.layout.addWidget(self.buttonPayment)
+        self.layout.addWidget(self.buttonReset)
         self.setLayout(self.layout)
+
+    def setAccounts(self, accounts):
+        for account in accounts:
+            self.accountSelect.addItem(account.fullname, account)
+        self.onAccountSelect(self.accountSelect.currentData())
+
+    def onAccountSelect(self, account):
+        self.cardSelect.clear()
+        for card in account.cards:
+            self.cardSelect.addItem(f"{card.accountNumber} {card.balance}{card.currency}", card)

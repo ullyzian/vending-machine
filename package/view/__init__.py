@@ -51,6 +51,7 @@ class Window(QMainWindow):
         :return: None
         """
         self.displayMenu.displayScreen.setPlainText(text)
+        # self.displayMenu.displayScreen.repaint()
 
     def setButtonsEnabled(self, enabled: bool) -> None:
         """
@@ -67,7 +68,6 @@ class Window(QMainWindow):
         :param changeTableValues: columns and rows
         :return: None
         """
-        print(changeTableValues)
         self.displayMenu.cashPaymentResultMenu.changeDialog.changeTable.updateTable(changeTableValues)
 
     def updateDenominationsTable(self, denominationsTableValues: dict) -> None:
@@ -85,5 +85,6 @@ class Window(QMainWindow):
         :return: None
         """
         self.setButtonsEnabled(True)
+        self.displayMenu.cardPaymentMenu.buttonPayment.setEnabled(True)
         self.switchMenu("empty")
         self.setDisplayText("Wybierz produkt")

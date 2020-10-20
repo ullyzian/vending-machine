@@ -1,9 +1,70 @@
-from decimal import Decimal, getcontext
+from dataclasses import dataclass
+from decimal import Decimal
 from random import randint
+from typing import List, Dict, Union, Optional
 
-from typing import List, Dict, Union
 
-getcontext().prec = 2
+@dataclass
+class Product:
+    """
+    Product representation in a vending machine
+    """
+    name: str
+    price: Decimal
+    currency: str = "PLN"
+
+    def __post_init__(self):
+        self.base_price = self.price
+
+    def convertCurrency(self, currency: str) -> None:
+        """
+        Converts product currency and price based on given currency
+        :param currency: USD, PLN or EUR
+        :return: None
+        """
+        self.currency = currency
+        self.price = self.getConvertedPrice(currency)
+
+    def getConvertedPrice(self, currency: str) -> Decimal:
+        """
+        Converts price for given currency
+        :param currency:
+        :return:
+        """
+        try:
+            price = {
+                "PLN": self.base_price.quantize(Decimal('0.01')),
+                "USD": (self.base_price * Decimal("0.26")).quantize(Decimal('0.01')),
+                "EUR": (self.base_price * Decimal("0.22")).quantize(Decimal('0.01'))
+            }
+            return price[currency]
+        except KeyError:
+            raise KeyError(f"Invalid currency type: {currency}")
+
+
+@dataclass
+class Card:
+    accountNumber: str
+    balance: Decimal
+    currency: str
+
+    def pay(self, product: Product) -> None:
+        """
+        Pay for given price
+        :param product: Product
+        :return: None
+        """
+        self.balance = (self.balance - product.getConvertedPrice(self.currency)).quantize(Decimal('0.01'))
+
+    def __str__(self):
+        return f"{self.accountNumber} - {float(self.balance)} {self.currency}"
+
+
+@dataclass
+class Account:
+    fullname: str
+    cards: List[Card]
+
 
 class BaseStore:
     """
@@ -62,72 +123,53 @@ class StoreEUR(BaseStore):
         self.populateStore()
 
 
-class Product:
-    """
-    Product representation in a vending machine
-    """
-
-    def __init__(self, name: str, price: Decimal, currency: str = "PLN") -> None:
-        self.name = name
-        self.price = price
-        self.base_price = price
-        self.currency = currency
-
-    def convertCurrency(self, currency: str) -> str:
-        """
-        Converts price and currency attributes into given currency equivalent
-        :param currency: to which convert
-        :return: message about converted currency
-        """
-        self.currency = currency
-
-        if currency == "PLN":
-            self.price = self.base_price
-            return "Wybrana wałuta: PLN"
-        elif currency == "USD":
-            self.price = self.base_price * Decimal("0.26")  # PLN to USD ~= 0.26
-            return "Wybrana wałuta: USD"
-        elif currency == "EUR":
-            self.price = self.base_price * Decimal("0.22")  # PLN to EUR ~= 0.22
-            return "Wybrana wałuta: EUR"
-        else:
-            raise Exception("Invalid currency type")
-
-    def __str__(self) -> str:
-        return f"<Product: name={self.name} price={self.price} currency={self.currency}>"
-
-
+@dataclass
 class Denomination:
     """
     Denomination representation in vending machine
     For now, it's just coins
     """
-
-    def __init__(self, value: Decimal, amount: int, currency: str) -> None:
-        self.value = value
-        self.amount = amount
-        self.currency = currency
-
-    def __str__(self):
-        return f"<Denomination: value={self.value} amount={self.amount} currency={self.currency}>"
-
-    def __repr__(self):
-        return f"<Denomination: value={self.value} amount={self.amount} currency={self.currency}>"
+    value: Decimal
+    amount: int
+    currency: str
 
 
-class Model:
+def populateAccounts() -> List[Account]:
+    accounts = []
+
+    card1 = Card("423746237462", Decimal("200.00"), "PLN")
+    account1 = Account("Jan Kawalski", [card1])
+    accounts.append(account1)
+
+    card2 = Card("42352465364", Decimal("100.00"), "USD")
+    card3 = Card("92378647823", Decimal("25.00"), "EUR")
+    account2 = Account("Piotr Maniewski", [card2, card3])
+    accounts.append(account2)
+
+    card4 = Card("48723658473623", Decimal("0.00"), "PLN")
+    card5 = Card("456745235423423", Decimal("89.00"), "EUR")
+    account3 = Account("Leszek Jung", [card4, card5])
+    accounts.append(account3)
+
+    return accounts
+
+
+@dataclass
+class Core:
     """
     Top level model in vending-machine
     """
+    selectedProduct: Optional[Product] = None
+    selectedAccount: Optional[Account] = None
+    selectedCard: Optional[Card] = None
+    store: Optional[Union[StorePLN, StoreUSD, StoreEUR]] = None
+    payed: Optional[Decimal] = None
+    error: Optional[str] = None
+    change: Optional[Dict[str, List[str]]] = None
+    enteredAmount: Decimal = Decimal("0.00")
 
-    def __init__(self) -> None:
-        self.selectedProduct = None
-        self.paymentType = None
-        self.enteredAmount = Decimal("0.00")
-        self.error = None
-        self.change = None
-        self.store = None
-        self.payed = None
+    def __post_init__(self) -> None:
+        self.accounts: List[Account] = populateAccounts()
 
     def processCashPayment(self) -> None:
         """
@@ -140,6 +182,20 @@ class Model:
         change = self.calculateChange()
         if change is not None:
             self.change = self.changeToTable(change)
+
+    def processCardPayment(self) -> None:
+        self.error = None
+        if self.selectedAccount is None:
+            self.error = "Error: wybierz konto"
+        elif self.selectedCard is None:
+            self.error = "Error: wybierz kartę"
+        elif self.selectedCard.balance < self.selectedProduct.getConvertedPrice(self.selectedCard.currency):
+            self.error = f"Error: nie wystarczy środków na koncie. środki: {self.selectedCard.balance}{self.selectedCard.currency}"
+        else:
+            self.selectedCard.pay(self.selectedProduct)
+
+    def insertDenomination(self, value: Decimal) -> None:
+        self.enteredAmount += value
 
     @staticmethod
     def getCurrencyStore(currency: str) -> Union[StorePLN, StoreUSD, StoreEUR]:
@@ -177,7 +233,7 @@ class Model:
 
         return table
 
-    def calculateChange(self) -> Union[List[Denomination], None]:
+    def calculateChange(self) -> Optional[List[Denomination]]:
         """
         Algorithm which calculates amount and type of denominations
         :return: list of denominations or None if it can't be calculated
@@ -218,6 +274,5 @@ class Model:
         self.store = None
         self.change = None
         self.enteredAmount = Decimal("0.00")
-        self.paymentType = None
         self.error = None
         self.payed = None
